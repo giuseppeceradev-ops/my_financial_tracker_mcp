@@ -6,6 +6,9 @@ dist/
 wheels/
 *.egg-info
 
+# database
+my_financial_tracker_mcp/database/my_financial_tracker_mcp.db
+
 # Virtual environments
 .venv
 
