@@ -4,9 +4,10 @@ from fastmcp.exceptions import ToolError
 from datetime import datetime
 import os
 
+from my_financial_tracker_mcp.llm.llm import llm_call, parse_llm_json
 from my_financial_tracker_mcp.database.receipts import ReceiptsDatabase
 from my_financial_tracker_mcp.database.categories import CategoriesDatabase
-from my_financial_tracker_mcp.llm.llm import llm_call, parse_llm_json
+from my_financial_tracker_mcp.prompt.categories import build_category_prompt
 from my_financial_tracker_mcp.prompt.receipts import build_receipt_prompt
 from my_financial_tracker_mcp.validators.receipts import validate_receipt
 from my_financial_tracker_mcp.services.google_vision import get_text
@@ -28,7 +29,7 @@ class Receipts:
         self.receipts_database = receipts_database
         self.categories_database = categories_database
 
-    def prepare_transation(
+    async def prepare_transation(
         self,
         amount: float,
         description: str,
@@ -36,11 +37,18 @@ class Receipts:
         timestamp: str | None = None
     ):
 
-        logger.info(f"Prepared transaction \"{description}\" of {amount} euro")
+        # -------------------------
+        # Category
+        # -------------------------
+
+        category = await llm_call(build_category_prompt(description))
+
+        logger.info(f"Prepared transaction \"{description}\" of {amount} euro, cagory found {category}")
         
         return {
             "amount": amount,
             "description": description,
+            "category": category,
             "company": company,
             "timestamp": timestamp,
             "required_confirmation_by_user": True,

@@ -6,6 +6,8 @@ from my_financial_tracker_mcp.database.receipts import ReceiptsDatabase
 from my_financial_tracker_mcp.services.financial_events import FinancialEventsService
 from my_financial_tracker_mcp.services.google_calendar import CalendarService
 from my_financial_tracker_mcp.database.invoices import InvoicesDatabase
+from my_financial_tracker_mcp.llm.llm import llm_call
+from my_financial_tracker_mcp.prompt.categories import build_category_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +32,9 @@ class Payments:
                 logger.info(f"Confirming purchase called with id: {id}")
                 event = self.financial_events_service.remove_event(id)
 
-                category_id = self.receipt_database.resolve_category_id(event.description)
+                category = await llm_call(build_category_prompt(event.description))
+
+                category_id = self.receipt_database.resolve_category_id(category)
                 self.receipt_database.create_receipt(description = event.description, timestamp=datetime.now().isoformat(), amount =event.amount )
                 id = self.receipt_database.add_receipt_item(event.amount, event.description, category_id, id)
                 logger.info(f"Created receipt item {id}")
@@ -50,7 +54,7 @@ class Payments:
                 if event.context:
                         invoice_id = json.loads(event.context)["invoice_id"]
 
-                id = self.invoices_database.update_invoice(id=invoice_id, closed=True, amount=event.amount, incoming=True)
+                id = self.invoices_database.update_invoice(id=invoice_id, closed=True, amount=event.amount, incoming=False)
                 logger.info(f"Created transaction {id}")
 
                 self.calendar_service.remove_payment_event(event.id, event.google_id)
@@ -68,7 +72,7 @@ class Payments:
                 if event.context:
                         invoice_id = json.loads(event.context)["invoice_id"]
 
-                id = self.invoices_database.update_invoice(id=invoice_id, closed=True, amount=event.amount, incoming=False)
+                id = self.invoices_database.update_invoice(id=invoice_id, closed=True, amount=event.amount, incoming=True)
                 logger.info(f"Closed invoice ({invoice_id})")
 
                 self.calendar_service.remove_payment_event(event.id ,event.google_id)

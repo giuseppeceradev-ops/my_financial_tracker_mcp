@@ -30,6 +30,9 @@ def build_invoice_prompt(text: str, description: str) -> str:
 
     5. TOTAL
     - Extract the general one, including also the VAT, always mentioned there
+    - The total is that specified in the document
+    - Don't set the total summerizing all items (except if the document don't mention it)
+    - Be careful to consider the total including the VAT
     - Put it in "total" attribute
 
     6. VALIDATE TOTAL

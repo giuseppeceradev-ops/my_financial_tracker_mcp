@@ -567,7 +567,7 @@ async def prepare_transation(
     company: str | None = None,
     timestamp: str | None = None
 ):
-    return receipts.prepare_transation(amount, description, company, timestamp)
+    return await receipts.prepare_transation(amount, description, company, timestamp)
 
 @mcp.tool(
     name="commit_transaction",
@@ -579,8 +579,7 @@ async def commit_transation(
     description: str,
     company: str | None = None,
     timestamp: str | None = None,
-    category: str | None = None,
-    ctx: Context = None
+    category: str | None = None
 ):
     return await receipts.commit_transation(amount, description, company, timestamp, category)
 

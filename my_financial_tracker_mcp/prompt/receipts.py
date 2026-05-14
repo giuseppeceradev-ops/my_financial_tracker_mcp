@@ -27,12 +27,9 @@ def build_receipt_prompt(text: str, description: str) -> str:
     - Merge identical items
 
     5. CATEGORIES (MANDATORY)
-    Choose ONLY:
-    - food
-    - beverages
-    - shopping
-    - transport
-    - other
+    - Choose a very short and significant category, 
+    - It must be composed by only one term
+    - Use italian language
 
     6. TOTAL
     - Extract if clearly present
