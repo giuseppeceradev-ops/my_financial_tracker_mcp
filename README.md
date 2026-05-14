@@ -1,33 +1,102 @@
 # My Financial Tracker MCP Server
 
-A didactic [Model Context Protocol](https://modelcontextprotocol.io) server built with FastMCP. One file per concept, every MCP primitive demonstrated with a real Gmail integration. Intended as a learning reference — not a production library.
+# My Financial Tracker MCP Server
 
-## What's inside
+A didactic [Model Context Protocol](https://modelcontextprotocol.io) server built with FastMCP.
 
-| MCP Feature | Where |
+This server implements a **personal finance management system** with:
+
+- receipt OCR + storage
+- invoice tracking (credits/debts)
+- transaction management
+- financial events + calendar integration
+- Google Drive archival
+- MCP OAuth 2.0 authentication (optional)
+- prepare → confirm → commit workflow pattern
+
+It is intended as a **learning reference architecture**, not a production-ready system.
+
+---
+
+## 🧠 Core architecture
+
+The system is organized into 5 main domains:
+
+### 🧾 Receipts
+- OCR extraction via Google Vision + LLM
+- Structured receipt storage
+- Receipt items management
+- Google Drive archival integration
+
+### 💳 Transactions
+- Manual + receipt-linked transactions
+- Semantic categorization engine
+- Prepare → commit confirmation workflow
+
+### 📄 Invoices
+- Customer + supplier invoices
+- Credit/debt tracking
+- Google Calendar integration for due dates
+- Drive archival + reminders
+
+### 📅 Financial Events
+- Future payments scheduling
+- Calendar-based reminders
+- Payment tracking endpoints
+
+### 🔐 Authentication
+- MCP spec OAuth 2.0 support
+- Consent-based authorization flow
+- Persistent token storage (optional)
+- Google OAuth integration for Gmail-like flow reuse
+
+---
+
+## 🧩 MCP Feature Map
+
+| MCP Feature | Implementation |
 |---|---|
-| **Tools — basic** | `get_current_time`, `calculate` |
-| **Tools — Pydantic return** | `analyze_text`, `get_email`, `list_emails` |
-| **Tools — side effects** | `create_note`, `send_email`, `reply_to_email` |
-| **Tools — progress reporting** | `long_task`, `stream_inbox`, `mark_as_read` |
-| **Tools — error handling** | `calculate` (ToolError), `_require_gmail` graceful degradation |
-| **Tools — OAuth2 flow** | `gmail_authenticate` — `ctx.elicit_url()` + `notifications/elicitation/complete` |
-| **Tool annotations** | `readOnlyHint`, `destructiveHint` on all tools |
-| **Resources (static)** | `notes://` — index of all notes |
-| **Resources (template)** | `notes://{title}` — read a note by title |
-| **Prompts** | 5 prompts: inbox triage, reply drafting, weekly digest, brainstorm, MCP pattern explainer |
-| **Lifespan** | Shared Gmail service + notes store, initialised once per process |
-| **Context injection** | `ctx: Context` in every async tool |
-| **Client logging** | `ctx.info()`, `ctx.debug()`, `ctx.warning()` — structured log stream |
-| **MCP sampling** | `ctx.sample()` in `summarize_email` — LLM inference delegated to the host |
-| **MCP elicitation (form)** | `ctx.elicit()` in `send_email` / `reply_to_email` — confirmation before sending |
-| **MCP elicitation (URL)** | `ctx.elicit_url()` in `gmail_authenticate` — OAuth consent via out-of-band URL |
-| **MCP spec OAuth 2.0** | `ConsentOAuthProvider` — discovery, dynamic registration, browser consent page, PKCE |
-| **Custom routes** | `GET /health`, `GET /auth-status`, `GET /auth`, `GET /oauth/callback`, `GET+POST /oauth/consent` |
-| **StreamableHTTP — stateful** | `stateless_http=False` — persistent GET SSE channel for server-initiated notifications |
-| **Graceful degradation** | Gmail tools return a helpful error when credentials are not configured |
-| **Antipattern showcase** | `watch_inbox` — documents why MCP has no persistent background push channel |
+| **Tools (core utility)** | `calculate`, `get_file_path` |
+| **Tools (receipts)** | `prepare_receipt`, `commit_receipt`, `filter_receipts`, `update_receipt`, `add_receipt_item` |
+| **Tools (transactions)** | `prepare_transation`, `commit_transation`, `update_transaction`, `get_transactions` |
+| **Tools (invoices)** | `prepare_invoice`, `commit_invoice`, `update_invoice`, `filter_invoices` |
+| **Tools (events)** | `add_future_purchase_to_calendar`, `get_events` |
+| **Tools (AI workflow)** | `transactions_assistant`, `build_category_prompt` |
+| **Auth tools/routes** | `/auth`, `/oauth/callback`, `/oauth/consent` |
+| **State management** | FastMCP lifespan (`_lifespan`) |
+| **Transport** | StreamableHTTP (`stateless_http=False`) |
+| **Middleware** | CORS + registration compatibility patch |
+| **OAuth provider** | `ConsentOAuthProvider` + `PersistentOAuthProvider` |
 
+---
+
+## ⚙️ Key design pattern
+
+### Prepare → Confirm → Commit
+
+Most financial operations follow this pattern:
+
+1. `prepare_*` → extract / draft / OCR / normalize
+2. user confirmation (handled externally or via MCP client)
+3. `commit_*` → persist into SQLite + services
+
+This applies to:
+- receipts
+- invoices
+- transactions
+
+---
+
+## 🔐 Authentication model
+
+The server supports **two authentication layers**:
+
+### 1. MCP OAuth 2.0 (optional)
+
+Enabled when:
+
+```bash
+MCP_AUTH_TOKEN=some_secret
 ---
 
 ## Quick start (demo tools only — no Gmail credentials needed)
