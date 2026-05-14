@@ -1,0 +1,54 @@
+{
+    "name": "MCP Gmail Server",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "features": {
+        "ghcr.io/devcontainers/features/node:1": {
+            "version": "20"
+        }
+    },
+    "forwardPorts": [8001],
+    "portsAttributes": {
+        "8001": {
+            "label": "MCP Server",
+            "onAutoForward": "notify",
+            "protocol": "http"
+        }
+    },
+    "containerEnv": {
+        "PYTHONUNBUFFERED": "1",
+        "GMAIL_CREDENTIALS_PATH": "${containerWorkspaceFolder}/credentials/credentials.json",
+        "GMAIL_TOKEN_PERSISTENCY_PATH": "${containerWorkspaceFolder}/credentials/token.json"
+    },
+    "postCreateCommand": "uv sync",
+    "mounts": [
+        "type=bind,source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,consistency=cached"
+    ],
+    "remoteUser": "vscode",
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "python.defaultInterpreterPath": "/home/vscode/.local/bin/uv"
+            },
+            "extensions": [
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "ms-python.debugpy",
+                "ms-python.mypy-type-checker",
+                "charliermarsh.ruff",
+                "ms-toolsai.jupyter",
+                "ms-toolsai.jupyter-keymap",
+                "ms-toolsai.jupyter-renderers",
+                "ms-vscode.remote-containers",
+                "ms-vscode.gitblame",
+                "ms-azuretools.vscode-docker",
+                "github.copilot",
+                "github.copilot-chat",
+                "github.vscode-pull-request-github",
+                "bierner.markdown-preview-github-styles",
+                "bierner.markdown-mermaid"
+            ]
+        }
+    }
+}
