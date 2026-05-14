@@ -8,7 +8,7 @@ from my_financial_tracker_mcp.models.event import Event
 logger = logging.getLogger(__name__)
 
 CALENDAR_SCOPES  = ["https://www.googleapis.com/auth/calendar"]
-GMAIL_CREDS = os.getenv("GMAIL_CREDENTIALS_PATH")
+GMAIL_CREDS = os.getenv("GOOGLE_CREDENTIALS_PATH")
 BASE_URL = os.getenv("PUBLIC_BASE_URL")
 
 class FinancialEventsService:

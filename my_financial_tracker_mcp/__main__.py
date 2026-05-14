@@ -22,7 +22,7 @@ import click
 @click.option("--host", "-H", type=str, default="0.0.0.0", help="Bind host")
 @click.option("-v", "--verbose", count=True, help="Verbosity: -v INFO, -vv DEBUG")
 def main(port: int | None, host: str, verbose: int) -> None:
-    """Start the Gmail MCP server (StreamableHTTP transport)."""
+    """Start the My Financial Tracker MCP server (StreamableHTTP transport)."""
     level = {0: logging.WARNING, 1: logging.INFO}.get(verbose, logging.DEBUG)
     logging.basicConfig(level=level, format="%(levelname)s %(name)s: %(message)s")
 
@@ -44,8 +44,8 @@ def main(port: int | None, host: str, verbose: int) -> None:
     click.echo(f"Starting MCP server on http://{host}:{effective_port}/mcp")
     if os.getenv("MCP_AUTH_TOKEN"):
         click.echo("MCP OAuth ENABLED — clients discover auth automatically via /.well-known/oauth-authorization-server")
-    gmail_creds = os.getenv("GMAIL_CREDENTIALS_PATH")
-    click.echo(f"Gmail: {'CONFIGURED' if gmail_creds else 'not configured (demo tools only)'}")
+    google_creds = os.getenv("GOOGLE_CREDENTIALS_PATH")
+    click.echo(f"Google: {'CONFIGURED' if google_creds else 'not configured (demo tools only)'}")
     click.echo(f"Connect your MCP client to http://localhost:{effective_port}/mcp/")
 
     uvicorn.run(

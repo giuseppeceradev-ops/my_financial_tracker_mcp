@@ -154,14 +154,14 @@ DB_NAME = os.getenv("DB_NAME")
 FILES_PATH = os.getenv("FILES_PATH")
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Gmail OAuth2 helper
+# Google OAuth2 helper
 # ──────────────────────────────────────────────────────────────────────────────
 
-SCOPES = ["https://www.googleapis.com/auth/gmail.modify"]
+#SCOPES = ["https://www.googleapis.com/auth/gmail.modify"]
 
 DRIVE_CALENDAR_SCOPES  = ["https://www.googleapis.com/auth/drive.file", "https://www.googleapis.com/auth/calendar"]
 
-gmail_creds = os.getenv("GMAIL_CREDENTIALS_PATH")
+gmail_creds = os.getenv("GOOGLE_CREDENTIALS_PATH")
 
 receipts_database: ReceiptsDatabase
 categories_database: CategoriesDatabase
@@ -468,7 +468,7 @@ async def oauth_callback(request: Request) -> Response:
     finally:
         os.environ.pop("OAUTHLIB_INSECURE_TRANSPORT", None)
 
-    # Persist token to disk only if GMAIL_TOKEN_PERSISTENCY_PATH is explicitly set
+    # Persist token to disk only if GOOGLE_TOKEN_PERSISTENCY_PATH is explicitly set
     if token_path:
         p = Path(token_path)
         p.parent.mkdir(parents=True, exist_ok=True)
@@ -812,17 +812,17 @@ async def auth_redirect(request: Request) -> Response:
     """Redirect browser directly to the Google OAuth consent page.
 
     Simpler than copying the full URL — just open http://localhost:8001/auth.
-    Requires GMAIL_CREDENTIALS_PATH to be set.
+    Requires GOOGLE_CREDENTIALS_PATH to be set.
     """
-    credentials_path = os.getenv("GMAIL_CREDENTIALS_PATH")
-    token_path = os.getenv("GMAIL_TOKEN_PERSISTENCY_PATH")
+    credentials_path = os.getenv("GOOGLE_CREDENTIALS_PATH")
+    token_path = os.getenv("GOOGLE_TOKEN_PERSISTENCY_PATH")
     if not credentials_path or not Path(credentials_path).exists():
-        return Response("GMAIL_CREDENTIALS_PATH not set or file not found.", status_code=500)
+        return Response("GOOGLE_CREDENTIALS_PATH not set or file not found.", status_code=500)
 
     from google_auth_oauthlib.flow import InstalledAppFlow
 
     flow = InstalledAppFlow.from_client_secrets_file(
-        credentials_path, SCOPES, autogenerate_code_verifier=False
+        credentials_path, DRIVE_CALENDAR_SCOPES, autogenerate_code_verifier=False
     )
     flow.redirect_uri = str(request.url).replace("/auth", "/oauth/callback").split("?")[0]
     auth_url, _ = flow.authorization_url(access_type="offline")
@@ -850,7 +850,7 @@ async def health(request: Request) -> JSONResponse:
 @mcp.custom_route("/auth-status", methods=["GET"])
 async def auth_status(request: Request) -> JSONResponse:
     return JSONResponse({
-        "gmail_configured": os.getenv("GMAIL_CREDENTIALS_PATH") is not None,
+        "gmail_configured": os.getenv("GOOGLE_CREDENTIALS_PATH") is not None,
         "mcp_auth_enabled": _MCP_AUTH_ENABLED,
     })
 

@@ -38,7 +38,7 @@ Create a `.env` file in your root directory and configure the following variable
 | `DB_FOLDER` | Path to the folder containing your SQLite databases |
 | `DB_NAME` | Name of the database file (e.g., `finance.db`) |
 | `FILES_PATH` | Default directory where receipts and invoices are stored |
-| `GMAIL_CREDENTIALS_PATH` | Path to your Google Cloud `credentials.json` |
+| `GOOGLE_CREDENTIALS_PATH` | Path to your Google Cloud `credentials.json` |
 | `MCP_AUTH_TOKEN` | Password for the MCP client consent page (Security) |
 | `MCP_PORT` | Port for the HTTP server (Default: `8001`) |
 

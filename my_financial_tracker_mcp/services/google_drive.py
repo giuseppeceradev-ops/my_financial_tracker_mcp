@@ -6,12 +6,11 @@ import pickle
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
-DRIVE_CALENDAR_SCOPES  = [
+SCOPES  = [
     "https://www.googleapis.com/auth/drive.file",
     "https://www.googleapis.com/auth/calendar"
 ]
-GMAIL_CREDS = os.getenv("GMAIL_CREDENTIALS_PATH")
-
+GOOGLE_CREDS = os.getenv("GOOGLE_CREDENTIALS_PATH")
 
 class DriveService:
     def __init__(self):
@@ -110,8 +109,8 @@ class DriveService:
         # 2. Se non esiste o non è valido → login OAuth
         if not creds or not creds.valid:
             flow = InstalledAppFlow.from_client_secrets_file(
-                GMAIL_CREDS,
-                DRIVE_CALENDAR_SCOPES 
+                GOOGLE_CREDS,
+                SCOPES 
             )
 
             creds = flow.run_local_server(port=0)

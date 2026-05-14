@@ -9,7 +9,9 @@ This directory holds OAuth2 credentials for the Google API (Google Drive, Google
 1. Go to <https://console.cloud.google.com>
 2. Create a new project (or select an existing one)
 3. Navigate to **APIs & Services → Library**
-4. Search for **Gmail API** and click **Enable**
+4. Search for **Google Drive API** and click **Enable**
+5. Search for **Google Calendar API** and click **Enable**
+6. Search for **Google Vision API** and click **Enable**
 
 ### 2. Configure the OAuth consent screen
 
@@ -39,14 +41,14 @@ cp .env.example .env
 The relevant variables:
 
 ```bash
-GMAIL_CREDENTIALS_PATH=./credentials/credentials.json
-GMAIL_TOKEN_PERSISTENCY_PATH=./credentials/token.json
+GOOGLE_CREDENTIALS_PATH=./credentials/credentials.json
+GOOGLE_TOKEN_PERSISTENCY_PATH=./credentials/token.json
+
+PUBLIC_BASE_URL = "localhost:8001"
 
 # folders where to store invoices and receipts to process
 DRIVE_INVOICES_FOLDER = "your folder id"
 DRIVE_RECEIPTS_FOLDER = "your folder id"
-
-PUBLIC_BASE_URL = "localhost:8001"
 
 # sqlite folder and file
 DB_FOLDER = "./my_financial_tracker_mcp/database"
@@ -58,30 +60,18 @@ FILES_PATH = "./my_financial_tracker_mcp/files"
 
 ### 5. First run — OAuth2 consent flow
 
-Start the server, connect your MCP client, then call the **`gmail_authenticate`** tool.
-The tool returns a URL — open it in your browser and grant access.
-Google redirects to `http://localhost:8001/oauth/callback`, which hot-reloads Gmail
-into the running server without a restart.
+* Start the server
 
 ```bash
 uv run mcp-server
-# then in your MCP client: call gmail_authenticate
 ```
 
-After you grant access, `credentials/token.json` is written.
-Subsequent server starts auto-refresh the token silently — no consent needed again.
+* You will get a link into the shell to authenticate in google 
+    - it occurs the first time and everytime the token is expired
+    - the "token.pickle" file is created
+    - remove this file and repeat this step every time you meet authentications errors
+* Connect your agent to the MCP Server (In Antigravity by "Manage MCP Servers")
 
-### 6. Required OAuth scopes
-
-The server requests these scopes:
-
-| Scope | Purpose |
-|---|---|
-| `gmail.readonly` | Read messages, threads, labels |
-| `gmail.send` | Send and reply to messages |
-| `gmail.modify` | Mark messages as read/unread |
-
----
 
 ## Troubleshooting
 
