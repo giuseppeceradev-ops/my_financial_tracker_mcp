@@ -1,4 +1,4 @@
-# Gmail MCP Server
+# My Financial Tracker MCP Server
 
 A didactic [Model Context Protocol](https://modelcontextprotocol.io) server built with FastMCP. One file per concept, every MCP primitive demonstrated with a real Gmail integration. Intended as a learning reference — not a production library.
 

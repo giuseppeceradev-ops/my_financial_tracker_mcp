@@ -1,6 +1,6 @@
 # Dev Container
 
-Opens a ready-to-run Python 3.13 environment for the Gmail MCP Server.
+Opens a ready-to-run Python 3.13 environment for the Financial Tracker MCP Server.
 
 ## What's included
 
