@@ -16,6 +16,7 @@ my_financial_tracker_mcp/database/my_financial_tracker_mcp.db
 .env
 credentials/*.json
 !credentials/README.md
+token.pickle
 
 # Editor / OS
 .DS_Store

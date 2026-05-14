@@ -115,7 +115,6 @@ import logging
 import operator
 import os
 from string import Template
-from base64 import urlsafe_b64decode, urlsafe_b64encode
 from contextlib import asynccontextmanager
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
@@ -126,7 +125,6 @@ import json
 from datetime import datetime
 from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
-from pydantic import BaseModel, Field
 from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, RedirectResponse, Response
@@ -148,10 +146,6 @@ from my_financial_tracker_mcp.database.receipts import ReceiptsDatabase
 from my_financial_tracker_mcp.database.categories import CategoriesDatabase
 from my_financial_tracker_mcp.database.invoices import InvoicesDatabase
 from my_financial_tracker_mcp.database.financial_event import FinancialEventsDatabase
-
-
-from my_financial_tracker_mcp.models.text_analysis import TextAnalysis
-from my_financial_tracker_mcp.models.time import TimeResult
 
 logger = logging.getLogger(__name__)
 
@@ -412,56 +406,21 @@ def initialize():
 # ──────────────────────────────────────────────────────────────────────────────
 
 _INSTRUCTIONS = (
-    "This server provides Gmail management and general-purpose utilities. "
-    "Gmail tools require GMAIL_CREDENTIALS_PATH to be set — they return a helpful "
-    "error otherwise. Demo tools (notes, time, analyze, calculate, long_task) always work. "
-    "Call list_emails before get_email — message IDs are not guessable. "
-    "Call get_thread to read full conversation context before drafting a reply. "
-    "send_email and reply_to_email ask for your confirmation before sending."
+    "This server is a comprehensive Personal Finance Tracker. It manages three main workflows: "
+    "1) Scanned Receipts: OCR-based extraction and archival. "
+    "2) Transactions: Manual entry and semantic categorization of income/expenses. "
+    "3) Invoices: Tracking of supplier/customer credits and debts with Google Calendar integration. "
+    "SAFETY RULE: You must always use a two-step workflow for write operations: first call a 'prepare' tool, "
+    "present the extracted data to the user for confirmation, and only then call the corresponding 'commit' tool."
 )
 
 mcp = FastMCP(
-    name="gmail-mcp",
+    name="my-financial-tracker-mcp",
     instructions=_INSTRUCTIONS,
     lifespan=lifespan,
     auth=_oauth_provider,
 )
 
-
-_OPS: dict[type, Any] = {
-    ast.Add: operator.add, ast.Sub: operator.sub,
-    ast.Mult: operator.mul, ast.Div: operator.truediv,
-    ast.Pow: operator.pow, ast.USub: operator.neg,
-    ast.Mod: operator.mod, ast.FloorDiv: operator.floordiv,
-}
-
-
-def _safe_eval(node: ast.expr) -> float:
-    if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
-        return float(node.value)
-    if isinstance(node, ast.BinOp) and type(node.op) in _OPS:
-        return _OPS[type(node.op)](_safe_eval(node.left), _safe_eval(node.right))
-    if isinstance(node, ast.UnaryOp) and type(node.op) in _OPS:
-        return _OPS[type(node.op)](_safe_eval(node.operand))
-    raise ToolError(
-        "Unsupported expression. Only arithmetic (+, -, *, /, **, %, //) is allowed. "
-        "Example: '(10 + 5) * 2 / 3'"
-    )
-
-
-@mcp.tool(annotations={"readOnlyHint": True})
-def calculate(expression: str) -> float:
-    """Safely evaluate an arithmetic expression. Supports +, -, *, /, **, %, //.
-
-    Examples: '2 + 2', '10 / 3', '2 ** 10', '(100 - 5) * 1.5'
-    """
-    try:
-        tree = ast.parse(expression.strip(), mode="eval")
-        return _safe_eval(tree.body)
-    except ToolError:
-        raise
-    except Exception as exc:
-        raise ToolError(f"Cannot parse '{expression}': {exc}")
 
 @mcp.tool(
     name="get_file_path",

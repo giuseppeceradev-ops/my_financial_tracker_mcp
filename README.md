@@ -1,623 +1,112 @@
-# My Financial Tracker MCP Server
+# My Financial Tracker — MCP Server
 
-# My Financial Tracker MCP Server
+An advanced [Model Context Protocol](https://modelcontextprotocol.io) server built with **FastMCP** for personal finance management. This system implements a stateful two-phase workflow (**Prepare → Confirm → Commit**) integrating Google Vision OCR, Google Drive, and Google Calendar.
 
-A didactic [Model Context Protocol](https://modelcontextprotocol.io) server built with FastMCP.
-
-This server implements a **personal finance management system** with:
-
-- receipt OCR + storage
-- invoice tracking (credits/debts)
-- transaction management
-- financial events + calendar integration
-- Google Drive archival
-- MCP OAuth 2.0 authentication (optional)
-- prepare → confirm → commit workflow pattern
-
-It is intended as a **learning reference architecture**, not a production-ready system.
-
----
-
-## 🧠 Core architecture
-
-The system is organized into 5 main domains:
-
-### 🧾 Receipts
-- OCR extraction via Google Vision + LLM
-- Structured receipt storage
-- Receipt items management
-- Google Drive archival integration
-
-### 💳 Transactions
-- Manual + receipt-linked transactions
-- Semantic categorization engine
-- Prepare → commit confirmation workflow
-
-### 📄 Invoices
-- Customer + supplier invoices
-- Credit/debt tracking
-- Google Calendar integration for due dates
-- Drive archival + reminders
-
-### 📅 Financial Events
-- Future payments scheduling
-- Calendar-based reminders
-- Payment tracking endpoints
-
-### 🔐 Authentication
-- MCP spec OAuth 2.0 support
-- Consent-based authorization flow
-- Persistent token storage (optional)
-- Google OAuth integration for Gmail-like flow reuse
+| Feature | Implementation |
+| :--- | :--- |
+| **Tools — Core** | `get_file_path` (Returns the default location of examples of receipt/invoices) |
+| **Tools — OCR & AI** | `prepare_receipt`, `prepare_invoice` (Data extraction via Google Vision + LLM) |
+| **Tools — Transactions** | `prepare_transaction`, `commit_transaction`, `update_transaction`, `get_transactions` (Manual, executed, or receipt-linked entries with automated category recognition) |
+| **Tools — Document Ops** | `commit_receipt`/`invoice`, `update_receipt`/`invoice`, `filter_receipts`/`invoices`, `add_receipt_item` (Full state management for processed documents) |
+| **Tools — Scheduling** | `add_future_purchase_to_calendar` (Future payments/reminders only), `get_events` (List future payments to execute) |
+| **Stateful Workflow** | Native **Prepare → User Confirmation → Commit** pattern |
+| **Prompts** | `transactions_assistant`: Intelligent financial assistant (Italian logic) |
+| **Lifespan** | Shared initialization of SQLite DBs and Google Services (Drive, Calendar) |
+| **MCP OAuth 2.0** | `ConsentOAuthProvider`: Native auth with consent page and PKCE |
+| **Custom Routes** | `/health`, `/auth`, `/oauth/callback`, `/api/payments/confirm/...` |
+| **StreamableHTTP** | `stateless_http=False`: Persistent SSE channel for server-initiated notifications |
 
 ---
 
-## 🧩 MCP Feature Map
+### Logic & Workflow Enhancements
 
-| MCP Feature | Implementation |
-|---|---|
-| **Tools (core utility)** | `calculate`, `get_file_path` |
-| **Tools (receipts)** | `prepare_receipt`, `commit_receipt`, `filter_receipts`, `update_receipt`, `add_receipt_item` |
-| **Tools (transactions)** | `prepare_transation`, `commit_transation`, `update_transaction`, `get_transactions` |
-| **Tools (invoices)** | `prepare_invoice`, `commit_invoice`, `update_invoice`, `filter_invoices` |
-| **Tools (events)** | `add_future_purchase_to_calendar`, `get_events` |
-| **Tools (AI workflow)** | `transactions_assistant`, `build_category_prompt` |
-| **Auth tools/routes** | `/auth`, `/oauth/callback`, `/oauth/consent` |
-| **State management** | FastMCP lifespan (`_lifespan`) |
-| **Transport** | StreamableHTTP (`stateless_http=False`) |
-| **Middleware** | CORS + registration compatibility patch |
-| **OAuth provider** | `ConsentOAuthProvider` + `PersistentOAuthProvider` |
-
----
-
-## ⚙️ Key design pattern
-
-### Prepare → Confirm → Commit
-
-Most financial operations follow this pattern:
-
-1. `prepare_*` → extract / draft / OCR / normalize
-2. user confirmation (handled externally or via MCP client)
-3. `commit_*` → persist into SQLite + services
-
-This applies to:
-- receipts
-- invoices
-- transactions
-
----
-
-## 🔐 Authentication model
-
-The server supports **two authentication layers**:
-
-### 1. MCP OAuth 2.0 (optional)
-
-Enabled when:
-
-```bash
-MCP_AUTH_TOKEN=some_secret
----
-
-## Quick start (demo tools only — no Gmail credentials needed)
-
-```bash
-uv sync
-uv run mcp-server
-
-# verify
-curl http://localhost:8001/health
-# → {"status":"ok","version":"0.2.0"}
-```
-
-The server listens on `http://0.0.0.0:8001/mcp`. All demo tools work immediately.
+1.  **Preparation Flow**: Documents and transactions are first "prepared" (`prepare_receipt`, `prepare_transaction`). This allows the user to review extracted data before persistence.
+2.  **Categorization**: The `commit_transaction` tool includes logic to recognize the fiscal category by analyzing the description.
+3.  **Temporal Separation**: 
+    * `commit_transaction` handles completed payments.
+    * `add_future_purchase_to_calendar` is reserved for future reminders/obligations.
+4.  **Granular Control**: Tools like `add_receipt_item` and `update_transaction` allow for detailed modification of records after the initial OCR/Extraction phase.
 
 ---
 
 ## Configuration
 
-```bash
-cp .env.example .env
-```
+Create a `.env` file in your root directory and configure the following variables:
 
-| Variable | Default | Purpose |
-|---|---|---|
-| `MCP_PORT` | `8001` | HTTP port |
-| `MCP_AUTH_TOKEN` | *(unset)* | Consent-page password. Set to a secret value to enable MCP spec OAuth 2.0 auth; unset = no auth (local dev). You type this password on the browser consent page to approve an MCP client. |
-| `GMAIL_CREDENTIALS_PATH` | *(unset)* | Path to `credentials.json` from Google Cloud Console |
-| `GMAIL_TOKEN_PERSISTENCY_PATH` | *(unset = in-memory only)* | Set to a file path to persist the OAuth token to disk across server restarts |
-
-**Token security note:** by default the OAuth token is kept in memory and lost on server restart. This is the safe default — set `GMAIL_TOKEN_PERSISTENCY_PATH` only if you explicitly want persistence (e.g. in a dev container or trusted server environment). The devcontainer sets it automatically to `credentials/token.json`.
+| Variable | Purpose |
+| :--- | :--- |
+| `DB_FOLDER` | Path to the folder containing your SQLite databases |
+| `DB_NAME` | Name of the database file (e.g., `finance.db`) |
+| `FILES_PATH` | Default directory where receipts and invoices are stored |
+| `GMAIL_CREDENTIALS_PATH` | Path to your Google Cloud `credentials.json` |
+| `MCP_AUTH_TOKEN` | Password for the MCP client consent page (Security) |
+| `MCP_PORT` | Port for the HTTP server (Default: `8001`) |
 
 ---
 
-## Gmail setup
+## Tool Reference
 
-Gmail tools require OAuth2 credentials. See **[credentials/README.md](credentials/README.md)** for full step-by-step instructions.
+### 1. Receipt Management
+Used for immediate retail purchases.
+*   **`prepare_receipt`**: Runs OCR on an image and proposes a structured data draft.
+*   **`commit_receipt`**: Finalizes storage in the DB and archives the file to Google Drive.
+*   **`filter_receipts`**: Search existing receipts by ID or date range.
+*   **`add_receipt_item`**: Adds specific line-item details to an existing receipt.
 
-Short version:
-1. Create a Google Cloud project and enable the Gmail API
-2. Create an OAuth 2.0 "Desktop app" client and download `credentials.json`
-3. Save it to `credentials/credentials.json`
-4. Set `GMAIL_CREDENTIALS_PATH=./credentials/credentials.json` in `.env`
-5. Start the server, then call the `gmail_authenticate` tool from any MCP client — it returns the Google consent URL, click it, grant access, and Gmail tools activate automatically
+### 2. Transactions & Categorization
+Handles manual movements and semantic categorization.
+*   **`prepare_transation`**: Creates a draft for a manual payment or receipt-linked movement.
+*   **`commit_transaction`**: Persists the movement and automatically detects the category.
+*   **`get_transactions`**: Query transactions by category, date, or receipt link.
+*   **`update_transaction`**: Modifies amount, description, or category for existing records.
 
----
+### 3. Invoice Management
+Handles credits/debts (Clients/Suppliers) with deadline tracking.
+*   **`prepare_invoice`**: Extracts supplier data, emission dates, and due dates via OCR.
+*   **`commit_invoice`**: Saves the invoice, uploads to Drive, and creates a **Google Calendar** event.
+*   **`filter_invoices`**: Query by status (open/closed) or type (incoming/outgoing).
 
-## Running the server
-
-```bash
-# Default (no auth, demo tools only)
-uv run mcp-server
-
-# With Gmail (token in memory only)
-GMAIL_CREDENTIALS_PATH=./credentials/credentials.json uv run mcp-server
-
-# With Gmail + token persisted to disk across restarts
-GMAIL_CREDENTIALS_PATH=./credentials/credentials.json \
-GMAIL_TOKEN_PERSISTENCY_PATH=./credentials/token.json \
-uv run mcp-server
-
-# With MCP OAuth auth (demo: consent page requires typing this password)
-MCP_AUTH_TOKEN=mysecret uv run mcp-server
-
-# Full stack: Gmail + persistence + auth
-GMAIL_CREDENTIALS_PATH=./credentials/credentials.json \
-GMAIL_TOKEN_PERSISTENCY_PATH=./credentials/token.json \
-MCP_AUTH_TOKEN=mysecret \
-uv run mcp-server
-
-# Custom port
-uv run mcp-server --port 9000
-
-# Verbose logging
-uv run mcp-server -v    # INFO
-uv run mcp-server -vv   # DEBUG
-```
+### 4. Reminders & Events
+*   **`add_future_purchase_to_calendar`**: Schedules a future payment reminder on Google Calendar.
+*   **`get_events`**: Fetches a list of upcoming financial deadlines.
 
 ---
 
-## Connecting to the server
+## AI Workflow: Transactions Assistant
 
-When `MCP_AUTH_TOKEN` is set the server runs full MCP spec OAuth 2.0. All clients below discover the auth endpoints automatically via `GET /.well-known/oauth-authorization-server` — no manual bearer-token configuration needed. On first connect the client registers itself, redirects your browser to the consent page, and stores the tokens for future sessions.
+The server includes a specialized prompt, `transactions_assistant`, which defines the behavior of the LLM:
 
-### Claude Code
-
-The project ships a `.mcp.json` that configures Claude Code automatically:
-
-```json
-{
-  "mcpServers": {
-    "gmail-mcp": {
-      "type": "http",
-      "url": "http://localhost:8001/mcp/"
-    }
-  }
-}
-```
-
-### Google Antigravity
-
-In the Agent pane click **⋯ → MCP Servers → Manage MCP Servers → Edit configuration** and add to `mcp_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "gmail-mcp": {
-      "serverUrl": "http://localhost:8001/mcp"
-    }
-  }
-}
-```
-
-> **Note:** Antigravity uses `"serverUrl"` — Claude Code and VS Code use `"url"`. The value is otherwise identical.
-
-#### Local setup with Antigravity (no devcontainer)
-
-Antigravity runs on your host machine and does not have access to a devcontainer's forwarded ports. Run the server directly on your machine:
-
-```bash
-# 1. Install uv if you don't have it
-curl -LsSf https://astral.sh/uv/install.sh | sh   # macOS / Linux
-# or: pip install uv
-
-# 2. Install dependencies
-uv sync
-
-# 3. Copy and fill in environment variables
-cp .env.example .env
-# Edit .env — set GMAIL_CREDENTIALS_PATH, GMAIL_TOKEN_PERSISTENCY_PATH, etc.
-
-# 4. Start the server
-uv run mcp-server
-```
-
-Then add the server to Antigravity as shown above. Because you're running locally, `localhost:8001` resolves directly — no port forwarding needed.
-
-**Gmail authentication** works the same way: call `gmail_authenticate` from the Antigravity agent pane, open the URL it returns in your browser, and grant access. The server hot-reloads Gmail without a restart.
-
-**Notes specific to Antigravity:**
-- Antigravity does not yet support MCP elicitation — `send_email` and `reply_to_email` will raise a `ToolError` by default because the confirmation prompt cannot be shown. Set `MCP_ELICITATION_FAIL_OPEN=1` in `.env` to allow them to proceed without confirmation (useful for local development, not recommended for production). See the [elicitation section](#mcp-elicitation--form-mode-user-confirmation-mid-tool) for details.
-- Antigravity uses `"serverUrl"` (not `"url"`) in its config — the two are otherwise identical.
-
-### VS Code
-
-Configure `.vscode/mcp.json` (already in the repo):
-
-```json
-{
-  "servers": {
-    "gmail-mcp": {
-      "type": "http",
-      "url": "http://127.0.0.1:8001/mcp/"
-    }
-  }
-}
-```
-
-### MCP Inspector
-
-```bash
-# 1. Install Node.js (includes npx)
-#    macOS:  brew install node
-#    Ubuntu: sudo apt install nodejs npm
-#    Other:  https://nodejs.org
-
-# 2. Run MCP Inspector
-npx @modelcontextprotocol/inspector
-# Connect to: http://localhost:8001/mcp
-```
-
-
-Kill and restart the Inspector process (not just the browser tab) when reconnecting after a server restart — the Inspector proxy caches the session ID.
+*   **Language:** Commands and responses are processed in **Italian**.
+*   **Safety Rule:** The assistant **must never** execute a `commit` tool without first showing the `prepare` results and receiving explicit user confirmation.
+*   **Logic:** 
+    *   Automatically distinguishes between "Single Transactions" (salaries, transfers) and "Receipts" (shopping, bills).
+    *   Normalizes categories to prevent duplicates (e.g., "Grocery" and "Supermarket" merge).
 
 ---
 
-## Tool reference
+## Security & OAuth 2.0
 
-### Demo tools (always available)
+This server implements the full **MCP OAuth 2.0 spec**. When a client (like Claude Code or VS Code) connects:
 
-| Tool | Description | Annotations |
-|---|---|---|
-| `get_current_time(timezone)` | Current time in any IANA timezone. Returns a typed `TimeResult`. | `readOnlyHint` |
-| `create_note(title, content)` | Create or overwrite an in-memory note (persists until server restart). | — |
-| `get_note(title)` | Retrieve a note by title. Raises `ToolError` with available titles on miss. | `readOnlyHint` |
-| `list_notes()` | List all note titles. | `readOnlyHint` |
-| `delete_note(title)` | Delete a note. | `destructiveHint` |
-| `analyze_text(text)` | Word count, char count, sentence count, avg word length, language hint. | `readOnlyHint` |
-| `calculate(expression)` | Safe arithmetic: `+`, `-`, `*`, `/`, `**`, `%`, `//`. No `eval` injection. | `readOnlyHint` |
-| `long_task(steps)` | Progress notifications + structured logging demo. 1–20 steps. | — |
-
-### Gmail tools (require `GMAIL_CREDENTIALS_PATH`)
-
-Call `gmail_authenticate` first if you haven't done so. All Gmail tools return a helpful error if credentials are not configured or the session has expired.
-
-| Tool | Description | Annotations |
-|---|---|---|
-| `gmail_authenticate()` | Start the OAuth2 flow via `ctx.elicit_url()`. Opens the Google consent page; hot-reloads Gmail when the callback fires. No server restart needed. | — |
-| `gmail_logout()` | Clear in-memory credentials and delete the token file if `GMAIL_TOKEN_PERSISTENCY_PATH` is set. | `destructiveHint` |
-| `list_emails(query, max_results)` | Search with Gmail query syntax (`"is:unread after:2025/01/01"`). Returns `EmailList`. | `readOnlyHint` |
-| `get_email(message_id)` | Full message with headers and plain-text body. Returns `EmailMessage`. | `readOnlyHint` |
-| `get_thread(thread_id)` | All messages in a thread, oldest first. | `readOnlyHint` |
-| `list_labels()` | All Gmail labels (system + custom). | `readOnlyHint` |
-| `mark_as_read(message_ids)` | Batch remove `UNREAD` label. Reports per-message progress. | — |
-| `send_email(to, subject, body, cc?)` | Compose and send. Asks for confirmation via elicitation before sending. | — |
-| `reply_to_email(message_id, body)` | Reply preserving `In-Reply-To`/`References` threading headers. | — |
-| `summarize_email(message_id)` | Fetches body → delegates summarisation to the host LLM via MCP sampling. | `readOnlyHint` |
-| `stream_inbox(max_emails)` | Fetch unread inbox emails one-by-one with `notifications/progress` per email. Progress reporting showcase. | `readOnlyHint` |
-| `watch_inbox(poll_interval_seconds)` | **Antipattern showcase** — see note below. | `readOnlyHint` |
-| `stop_watch_inbox()` | Signal a running `watch_inbox` to stop. | — |
-
-> **`watch_inbox` antipattern:** MCP `notifications/message` and `notifications/progress` are bound to an in-flight tool request — they flow through the POST response body or the GET SSE channel *of that specific request*. There is no spec-native way for a background task to push arbitrary events to a connected client outside a request context. `watch_inbox` works around this by polling Gmail in a background loop and logging results via `ctx.info()`, but the notifications only arrive while the tool call is still open — which means the MCP client's timeout (e.g. MCP Inspector's 60 s default) will kill the tool before it does much useful work. The right architecture for real-time inbox monitoring is a webhook → queue → external push channel, not an MCP long-poll tool.
-
-### Resources
-
-| URI | Description |
-|---|---|
-| `notes://` | Index of all note titles (one per line). |
-| `notes://{title}` | Content of a specific note. |
-
-### Prompts
-
-| Prompt | Arguments | Description |
-|---|---|---|
-| `triage_inbox` | `date_range` | Prioritise inbox emails with urgency labels and suggested replies. |
-| `draft_reply` | `message_id`, `tone` | Draft a reply after reading the full thread. |
-| `weekly_digest` | `week_of` | Weekly email report grouped by sender domain. |
-| `brainstorm_with_notes` | `topic` | Brainstorm ideas and capture them as notes. |
-| `explain_mcp_pattern` | `pattern` | Live demo of an MCP pattern using this server as the example. |
+1.  **Discovery:** The client finds auth endpoints via `/.well-known/oauth-authorization-server`.
+2.  **Authorization:** The client redirects you to the `/oauth/consent` page.
+3.  **Password:** You must enter the `MCP_AUTH_TOKEN` defined in your `.env` to approve the connection.
+4.  **Google Integration:** The `/auth` route handles the secondary OAuth flow specifically for Google Services (Drive, Calendar, Vision).
 
 ---
 
-## MCP pattern guide
+## Quick Start
 
-### Lifespan + shared state
+1.  **Install Dependencies**:
+    ```bash
+    uv sync
 
-FastMCP 3.x lifespan must yield a `dict`. Access it via `ctx.lifespan_context`.
+2.  **Run the Server:**
+    ```bash
+    uv run mcp-server
 
-```python
-@asynccontextmanager
-async def lifespan(server: FastMCP):
-    yield {"gmail_service": build_gmail_service(), "notes": {}}
-
-mcp = FastMCP(name="gmail-mcp", lifespan=lifespan)
-
-@mcp.tool()
-async def create_note(title: str, content: str, ctx: Context) -> str:
-    ctx.lifespan_context["notes"][title] = content
-    return f"Note '{title}' saved."
-```
-
-### Progress reporting + client logging
-
-```python
-@mcp.tool()
-async def long_task(steps: int, ctx: Context) -> str:
-    await ctx.info(f"Starting {steps} steps")
-    for i in range(steps):
-        await ctx.report_progress(progress=i, total=steps)
-        await ctx.debug(f"Step {i+1}/{steps}")
-        await asyncio.sleep(0.25)
-    return "Done."
-```
-
-Progress notifications require the client to pass a `progressToken` in `_meta`:
-```json
-{"method":"tools/call","params":{"name":"long_task","arguments":{"steps":5},"_meta":{"progressToken":"my-task"}}}
-```
-
-`ctx.info()` / `ctx.debug()` / `ctx.warning()` send `notifications/message` — visible in MCP Inspector's **Notifications** tab.
-
-### MCP sampling (server-side LLM call)
-
-```python
-@mcp.tool()
-async def summarize_email(message_id: str, ctx: Context) -> str:
-    body = fetch_email_body(message_id)
-    result = await ctx.sample(f"Summarise in ≤150 words:\n\n{body}")
-    return result.text
-```
-
-No external API key needed — the host agent (Claude) performs the inference.
-
-### MCP elicitation — form mode (user confirmation mid-tool)
-
-```python
-from pydantic import BaseModel
-
-class ConfirmSend(BaseModel):
-    confirm: bool = Field(default=False, description="Send the email?")
-
-result = await ctx.elicit("Send email to alice@example.com?", schema=ConfirmSend)
-if result.action == "accept" and result.data.confirm:
-    # user confirmed
-    ...
-```
-
-The client renders a native form from the Pydantic schema. Only primitive fields (`str`, `int`, `float`, `bool`) and `list[str]` are allowed — no nested models.
-
-#### Detecting elicitation support
-
-Elicitation support is advertised by the client during the `initialize` handshake. There are two ways to check it:
-
-**Reactive** — call `ctx.elicit()` and catch the `McpError` if the client returns `method not found`:
-```python
-from mcp.shared.exceptions import McpError
-
-try:
-    result = await ctx.elicit(message, schema=MySchema)
-except McpError:
-    # client does not support elicitation — decide: fail-closed or fail-open
-    raise ToolError("This action requires a client that supports elicitation.")
-```
-
-**Proactive** — inspect the client's declared capabilities before the round-trip:
-```python
-caps = ctx.request_context.session._client_params.capabilities
-if caps.elicitation is None:
-    raise ToolError("This action requires a client that supports elicitation.")
-result = await ctx.elicit(message, schema=MySchema)
-```
-
-For destructive operations (sending email, deleting data) always **fail-closed** — raise a `ToolError` rather than proceeding silently. Failing open (proceeding without confirmation when elicitation is unavailable) is a security anti-pattern: the user never approved the action.
-
-This server controls the failure mode via `MCP_ELICITATION_FAIL_OPEN`:
-- **Unset (default):** fail-closed — `ToolError` if the client does not support elicitation
-- **Set to any value:** fail-open — logs a warning and proceeds (useful for development with clients like Antigravity that don't yet support elicitation)
-
-### MCP elicitation — URL mode (OAuth consent)
-
-URL-mode elicitation sends the user to an external URL for interactions that must happen outside the LLM context (OAuth, credentials, payments).
-
-```python
-@mcp.tool()
-async def gmail_authenticate(ctx: Context) -> str:
-    auth_url = "http://localhost:8001/auth"
-    elicitation_id = str(uuid.uuid4())
-
-    # Store session so the OAuth callback can send the completion notification
-    _pending_oauth["session"] = ctx.request_context.session
-    _pending_oauth["elicitation_id"] = elicitation_id
-
-    try:
-        result = await ctx.elicit_url(
-            message="Click Accept to open the Google OAuth consent page.",
-            url=auth_url,
-            elicitation_id=elicitation_id,
-        )
-        if result.action == "accept":
-            return "OAuth started — complete the flow in your browser."
-        return "Authentication cancelled."
-    except Exception:
-        # Fallback for clients that don't support URL-mode elicitation yet
-        return f"Open this URL in your browser:\n\n{auth_url}"
-```
-
-When OAuth completes, the `/oauth/callback` route sends `notifications/elicitation/complete` back through the GET SSE channel — the spec-native signal that the out-of-band interaction is done:
-
-```python
-@mcp.custom_route("/oauth/callback", methods=["GET"])
-async def oauth_callback(request: Request) -> Response:
-    # ... exchange code for token, hot-reload gmail_service ...
-
-    session = _pending_oauth.get("session")
-    elicitation_id = _pending_oauth.get("elicitation_id")
-    if session and elicitation_id:
-        await session.send_elicit_complete(elicitation_id)
-
-    return Response(SUCCESS_HTML, media_type="text/html")
-```
-
-`notifications/elicitation/complete` requires `stateless_http=False` (stateful mode) so the persistent GET SSE channel is available. It was added in MCP spec 2025-11-25; clients that don't support it yet will simply ignore the notification.
-
-### Stateful vs stateless HTTP transport
-
-```python
-# stateless_http=False  (this server's default)
-# - Each POST request gets its own SSE response stream
-# - A separate persistent GET /mcp SSE channel carries server-initiated notifications:
-#   tools/list_changed, resources/list_changed, notifications/elicitation/complete
-# - Required for: background notifications, elicitation/complete
-#
-# stateless_http=True
-# - No persistent SSE channel — every interaction is a single POST/response
-# - Simpler, horizontally scalable, but can't send unsolicited notifications
-app = mcp.http_app(path="/mcp", stateless_http=False)
-```
-
-### MCP spec OAuth 2.0 auth
-
-Set `MCP_AUTH_TOKEN` to a secret value at server startup to enable native MCP OAuth. The value is the **consent-page password** — when a new MCP client tries to connect, you see a browser prompt asking you to type this value before approving the connection. Clients that have already been approved store a refresh token and reconnect silently.
-
-FastMCP wires the full spec automatically when you pass an `AuthProvider` to `FastMCP(auth=...)`:
-
-```python
-# server.py — subclass the built-in InMemoryOAuthProvider and add a consent page
-from fastmcp.server.auth.providers.in_memory import InMemoryOAuthProvider
-from mcp.server.auth.provider import AuthorizationCode, AuthorizationParams, construct_redirect_uri
-
-class ConsentOAuthProvider(InMemoryOAuthProvider):
-    def __init__(self, base_url: str) -> None:
-        super().__init__(
-            base_url=base_url,
-            client_registration_options=ClientRegistrationOptions(
-                enabled=True, valid_scopes=["mcp:full"],
-            ),
-            revocation_options=RevocationOptions(enabled=True),
-            required_scopes=["mcp:full"],
-        )
-        self.pending: dict[str, tuple] = {}
-
-    async def authorize(self, client, params: AuthorizationParams) -> str:
-        key = secrets.token_urlsafe(16)
-        self.pending[key] = (client, params)
-        return f"{self._base_url}/oauth/consent?key={key}"   # → browser consent page
-
-    def approve(self, key: str) -> str | None:
-        client, params = self.pending.pop(key)
-        code = secrets.token_hex(16)
-        self.auth_codes[code] = AuthorizationCode(code=code, ...)
-        return construct_redirect_uri(str(params.redirect_uri), code=code, state=params.state)
-```
-
-```python
-# server.py — provider and FastMCP wired together
-if _MCP_AUTH_ENABLED := bool(os.getenv("MCP_AUTH_TOKEN")):
-    _oauth_provider = PersistentOAuthProvider(base_url="http://localhost:8001", state_path=Path("credentials/oauth_state.json"))
-else:
-    _oauth_provider = None
-
-mcp = FastMCP(name="gmail-mcp", lifespan=lifespan, auth=_oauth_provider)
-```
-
-FastMCP then adds automatically:
-- `GET /.well-known/oauth-authorization-server` — RFC 8414 discovery metadata
-- `POST /register` — RFC 7591 dynamic client registration
-- `GET /authorize` — redirects browser to `/oauth/consent`
-- `POST /token` — code ↔ access + refresh tokens (PKCE enforced)
-- `POST /revoke` — token revocation
-- `GET /.well-known/oauth-protected-resource/mcp` — RFC 9728 resource metadata
-- `RequireAuthMiddleware` on the `/mcp` endpoint
-
-The browser consent page (`/oauth/consent`) is added via `@mcp.custom_route` which exempts it from auth, so the user can approve/deny without already having a token:
-
-```python
-@mcp.custom_route("/oauth/consent", methods=["GET"])
-async def consent_page(request: Request) -> Response:
-    key = request.query_params["key"]
-    # render HTML with Approve / Deny buttons
-
-@mcp.custom_route("/oauth/consent", methods=["POST"])
-async def consent_action(request: Request) -> Response:
-    form = await request.form()
-    redirect_url = _oauth_provider.approve(form["key"])  # or .deny()
-    return RedirectResponse(redirect_url, status_code=302)
-```
-
-**MCP clients handle the entire flow automatically** — no manual bearer token configuration. On first connection they discover the auth server, register themselves, redirect the user to the consent page, and exchange the code for tokens. On subsequent connections they use the refresh token silently.
-
-### Custom routes
-
-```python
-@mcp.custom_route("/health", methods=["GET"])
-async def health(request: Request) -> JSONResponse:
-    return JSONResponse({"status": "ok"})
-```
-
-Routes registered with `@mcp.custom_route` are included automatically when `mcp.http_app()` is called. Useful for health checks, auth redirects, and OAuth callbacks on the same port.
+3.  **Verify Status**:
+    Check the health endpoint at `http://localhost:8001/health`.
 
 ---
-
-## Dev container
-
-Open the project in VS Code and choose **Reopen in Container**. The dev container:
-- Installs Python 3.13 + uv
-- Installs Node.js 20 via a devcontainer feature (no curl-pipe)
-- Forwards port 8001 with a label
-- Runs `uv sync` automatically
-- Sets `GMAIL_CREDENTIALS_PATH` and `GMAIL_TOKEN_PERSISTENCY_PATH` to the `credentials/` directory
-
-Note: the devcontainer explicitly opts in to disk token persistence via `GMAIL_TOKEN_PERSISTENCY_PATH`. Remove that `containerEnv` entry if you prefer in-memory-only behaviour inside the container.
-
----
-
-## Testing
-
-```bash
-# Import check
-uv run python -c "from my_financial_tracker_mcp.server import build_app; print(type(build_app()))"
-
-# Health endpoint (works with or without auth)
-curl http://localhost:8001/health
-
-# Auth status
-curl http://localhost:8001/auth-status
-# → {"gmail_configured": false, "mcp_auth_enabled": false}
-```
-
-The raw MCP JSON-RPC examples below assume `MCP_AUTH_TOKEN` is **not set** (no auth). If auth is enabled, complete the OAuth flow through an MCP client first to obtain a bearer token, then pass it as a header:
-
-```bash
-# No auth
-curl -s -X POST http://localhost:8001/mcp \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json, text/event-stream" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' \
-  | grep -o '"name":"[^"]*"'
-
-# With auth (replace <token> with the bearer token issued after OAuth consent)
-curl -s -X POST http://localhost:8001/mcp \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json, text/event-stream" \
-  -H "Authorization: Bearer <token>" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' \
-  | grep -o '"name":"[^"]*"'
-
-# Call a tool (no auth)
-curl -s -X POST http://localhost:8001/mcp \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json, text/event-stream" \
-  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"get_current_time","arguments":{"timezone":"Europe/Rome"}}}'
-
-# MCP Inspector (interactive) — see "Connecting to the server" section above
-```
+*Note: This server is designed for personal financial tracking and requires an active Google Cloud Project with the Vision, Drive, and Calendar APIs enabled; it was tested with the AI agent included in Antigravity*
