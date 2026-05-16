@@ -50,6 +50,7 @@ The project combines:
 
 The primary goal of the project is to provide an nfrastructure capable of:
 
+* monitoring personal finance
 * understanding financial documents
 * categorizing expenses automatically
 * orchestrating reminders and payments
