@@ -1,17 +1,18 @@
 # My Financial Tracker — MCP Server
 
-An advanced [Model Context Protocol](https://modelcontextprotocol.io) server built with **FastMCP** for personal finance management. This system implements a stateful two-phase workflow (**Prepare → Confirm → Commit**) integrating Google Vision OCR, Google Drive, and Google Calendar.
+A [Model Context Protocol](https://modelcontextprotocol.io) server built with **FastMCP** for personal finance management. This system implements a stateful two-phase workflow (**Prepare → Commit**) integrating Google Vision OCR, Google Drive, and Google Calendar for the management of financial operations.
 
 Project implemented starting from https://github.com/The-Software-Academy/mcp-example/
 
 [More details](./my_financial_tracker_mcp/documentation/README.md)
 
-**Goal**
+**Operations**
 1. process of *single transactions* as purchases of single products (store on db)
 2. process of *receipts* (recognise + OCR by google vision + google drive archiving + store in db) 
 3. process of *invoices* active/passive (recognise + OCR by google vision + google drive archiving + google calendar + store in db) 
 4. process of *future financial events* (reminders for future purchaces as google events)
 
+## Quick introduction ##
 | Feature | Implementation |
 | :--- | :--- |
 | **Tools — Core** | `get_file_path` (Returns the default location of examples of receipt/invoices) |
