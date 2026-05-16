@@ -4,7 +4,6 @@ My Financial Tracker — a very basic MCP server for managing personal finances
 
 Features demonstrated:
   ┌─ SECTION A: Core utility tools ────────────────────────────────────┐
-  │  calculate                    — safe AST arithmetic evaluator      │
   │  get_file_path                — resolve invoices/receipts path     │
   └────────────────────────────────────────────────────────────────────┘
 

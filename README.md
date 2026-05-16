@@ -2,6 +2,10 @@
 
 An advanced [Model Context Protocol](https://modelcontextprotocol.io) server built with **FastMCP** for personal finance management. This system implements a stateful two-phase workflow (**Prepare → Confirm → Commit**) integrating Google Vision OCR, Google Drive, and Google Calendar.
 
+Project implemented starting from https://github.com/The-Software-Academy/mcp-example/
+
+[More details](./my_financial_tracker_mcp/documentation/README.md)
+
 **Goal**
 1. process of *single transactions* as purchases of single products (store on db)
 2. process of *receipts* (recognise + OCR by google vision + google drive archiving + store in db) 
@@ -103,16 +107,26 @@ This server implements the full **MCP OAuth 2.0 spec**. When a client (like Clau
 
 ## Quick Start
 
-1.  **Install Dependencies**:
+1. COnfigure your google account and enable for google drive, google vision and google calendar. Set creadentials as explained in [Credentials setup](../../credentials/README.md)
+
+2. Set the .env files (to see ./.env.example)
+
+3.  **Install Dependencies**:
     ```bash
     uv sync
 
-2.  **Run the Server:**
+4.  **Run the Server:**
     ```bash
     uv run mcp-server
 
-3.  **Verify Status**:
+5. if it is the first time that you start the server, you will get a google auth link into the terminal. Click on it to authenticate google services.
+
+6. Server MCP is required to be authenticated. If you are using Antigravity it is enough to use "Manage MCP Servers"
+
+7.  **Verify Status**:
     Check the health endpoint at `http://localhost:8001/health`.
 
+
 ---
+
 *Note: This server is designed for personal financial tracking and requires an active Google Cloud Project with the Vision, Drive, and Calendar APIs enabled; it was tested with the AI agent included in Antigravity*

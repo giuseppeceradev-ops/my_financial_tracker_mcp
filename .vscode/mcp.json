@@ -1,9 +1,0 @@
-{
-    "servers": {
-        // HTTP mode — requires the server to be running: uv run mcp-server
-        "my-financial-tracker-mcp": {
-            "type": "http",
-            "url": "http://localhost:8001/mcp/"
-        }
-    }
-}
