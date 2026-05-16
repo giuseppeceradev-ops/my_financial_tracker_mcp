@@ -2,9 +2,11 @@
 
 A [Model Context Protocol](https://modelcontextprotocol.io) server built with **FastMCP** for personal finance management. This system implements a stateful two-phase workflow (**Prepare → Commit**) integrating Google Vision OCR, Google Drive, and Google Calendar for the management of financial operations.
 
-Project implemented starting from https://github.com/The-Software-Academy/mcp-example/
+Project was implemented starting from https://github.com/The-Software-Academy/mcp-example/
 
 [Advanced documentation](./my_financial_tracker_mcp/documentation/README.md)
+
+[Video](https://drive.google.com/file/d/15GMiVcEvZCMLG3W0DmG0Q0VA7Eox6FK3/)
 
 **Operations**
 1. process of *single transactions* as purchases of single products (store on db)
