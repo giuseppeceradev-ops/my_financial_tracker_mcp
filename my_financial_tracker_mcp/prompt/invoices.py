@@ -40,7 +40,9 @@ def build_invoice_prompt(text: str, description: str) -> str:
     - Indicate if validation is not ok
 
     7. COMPANY
-    - Extract only the customer if the invoice is outcoming or the provider if it is incoming. 
+    - Extract only the customer if the invoice is outcoming or the provider if it is incoming.
+    - The customer is usually specified as client, on top right of the document
+    - The provider is usually put on top left of the document 
     - Be careful not to confuse the customer/provider.
     - If you are not at 100% you have to ask it for the end user
 
