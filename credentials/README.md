@@ -1,4 +1,4 @@
-# Google API Credentials Setup
+# Google API Credentials and general setup
 
 This directory holds OAuth2 credentials for the Google API (Google Drive, Google Calendar and Google Vision). **Never commit `credentials.json` or `token.json` to git** — they are excluded in `.gitignore`.
 
