@@ -11,7 +11,8 @@ This directory holds OAuth2 credentials for the Google API (Google Drive, Google
 3. Navigate to **APIs & Services → Library**
 4. Search for **Google Drive API** and click **Enable**
 5. Search for **Google Calendar API** and click **Enable**
-6. Search for **Google Vision API** and click **Enable**
+6. Search for **Cloud Vision API** and click **Enable**
+6. Search for **Gemini API** and click **Enable**
 
 ### 2. Configure the OAuth consent screen
 
@@ -30,8 +31,18 @@ This directory holds OAuth2 credentials for the Google API (Google Drive, Google
 5. Google downloads a file named something like `client_secret_<id>.apps.googleusercontent.com.json`
 6. **Rename it** and save as `credentials/credentials.json` in this project
 
-### 4. Configure environment variables
+### 4. GEMINI API Key
+1. Navigate to https://aistudio.google.com/api-keys
+2. Create an API Key associated to the project created on point 1.2
+3. Copy && paste the key on GEMINI_API_KEY (to see section 6)
 
+### 5. Google Drive folders
+1. Create a folder to save receipts
+2. Take note of its id and copy && past it on DRIVE_RECEIPTS_FOLDER (to see the section 6)
+3. Create a folder to save invoices
+4. Take note of its id and copy && past it on DRIVE_INVOICES_FOLDER (to see the section 6)
+
+### 6. Configure environment variables
 Copy the example file and fill in the paths:
 
 ```bash
@@ -45,6 +56,9 @@ GOOGLE_CREDENTIALS_PATH=./credentials/credentials.json
 GOOGLE_TOKEN_PERSISTENCY_PATH=./credentials/token.json
 
 PUBLIC_BASE_URL = "localhost:8001"
+
+GEMINI_API_KEY=
+GEMINI_MODEL = "gemini-3-flash-preview"
 
 # folders where to store invoices and receipts to process
 DRIVE_INVOICES_FOLDER = "your folder id"
@@ -63,6 +77,8 @@ FILES_PATH = "./my_financial_tracker_mcp/files"
 * Start the server
 
 ```bash
+cd ./my_financial_tracker_mcp 
+uv sync
 uv run mcp-server
 ```
 
