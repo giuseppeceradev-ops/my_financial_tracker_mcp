@@ -8,6 +8,8 @@ Project was implemented starting from https://github.com/The-Software-Academy/mc
 
 [Video](https://drive.google.com/file/d/15GMiVcEvZCMLG3W0DmG0Q0VA7Eox6FK3/)
 
+[Credentials configuration](./credentials/README.md)
+
 **Operations**
 1. process of *single transactions* as purchases of single products (store on db)
 2. process of *receipts* (recognise + OCR by google vision + google drive archiving + store in db) 

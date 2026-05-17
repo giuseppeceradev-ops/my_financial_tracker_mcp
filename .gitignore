@@ -7,7 +7,7 @@ wheels/
 *.egg-info
 
 # database
-my_financial_tracker_mcp/database/my_financial_tracker_mcp.db
+my_financial_tracker_mcp/database/my_fin_trace.db
 
 # Virtual environments
 .venv

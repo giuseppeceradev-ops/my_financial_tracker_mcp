@@ -1,0 +1,7 @@
+{
+    "mcpServers": {
+        "my_financial-tracker-mcp": {
+            "serverUrl": "http://localhost:8001/mcp/"
+        }
+    }
+}

@@ -32,17 +32,28 @@ This directory holds OAuth2 credentials for the Google API (Google Drive, Google
 6. **Rename it** and save as `credentials/credentials.json` in this project
 
 ### 4. GEMINI API Key
+
 1. Navigate to https://aistudio.google.com/api-keys
 2. Create an API Key associated to the project created on point 1.2
 3. Copy && paste the key on GEMINI_API_KEY (to see section 6)
 
-### 5. Google Drive folders
-1. Create a folder to save receipts
-2. Take note of its id and copy && past it on DRIVE_RECEIPTS_FOLDER (to see the section 6)
-3. Create a folder to save invoices
-4. Take note of its id and copy && past it on DRIVE_INVOICES_FOLDER (to see the section 6)
+### 5. Google Vision
 
-### 6. Configure environment variables
+1. Go to <https://console.cloud.google.com>
+2. Navigate to service account
+3. Create a new service account
+5. Create a new key for the service account
+6. Download the JSON key and save it as `credentials/vision-key.json` in this project
+
+### 6. Google Drive folders
+
+1. Create a folder to save receipts
+2. Take note of its id and copy && past it on DRIVE_RECEIPTS_FOLDER (to see the section 7)
+3. Create a folder to save invoices
+4. Take note of its id and copy && past it on DRIVE_INVOICES_FOLDER (to see the section 7)
+
+### 7. Configure environment variables
+
 Copy the example file and fill in the paths:
 
 ```bash
@@ -72,7 +83,10 @@ DB_NAME = "my_fin_trace.db"
 FILES_PATH = "./my_financial_tracker_mcp/files"
 ```
 
-### 5. First run — OAuth2 consent flow
+### 9. MCP Configuration file (for antigravity)
+1. Copy the file "mcp_config.json" into "~/.gemini/antigravity/" and restart the client (change the port number if it is different)
+
+### 10. First run — OAuth2 consent flow
 
 * Start the server
 
@@ -82,7 +96,8 @@ uv sync
 uv run mcp-server
 ```
 
-* You will get a link into the shell to authenticate in google 
+* You will get a link into the shell to authenticate in google (windows)
+* Or You will be redirected to a browser window to authenticate in google (mac)
     - it occurs the first time and everytime the token is expired
     - the "token.pickle" file is created
     - remove this file and repeat this step every time you meet authentications errors
